@@ -103,7 +103,7 @@ class ParticipantListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
         context["form"] = ParticipantForm()
         return context
 
-class ParticipantDetailView(SuccessMessageMixin, DetailView):
+class ParticipantDetailView(LoginRequiredMixin, SuccessMessageMixin, DetailView):
     model = Participant
     template_name = "corecode/participant_detail.html"
 
