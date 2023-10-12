@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Participants{% endblock title %}
+
+{% block breadcrumb %}
+<a class="btn btn-primary" href="{% url 'add_participant_type' %}"><i
+    class="fas fa-plus"></i> New Participant Type</a>
+{% endblock breadcrumb %}
+
+{% block content %}
+  <div class="table-responsive">
+    <table id="eventtable" class="table table-bordered table-hover" data-page-length='100'>
+      <thead class="thead-light">
+        <tr>
+          <th>S/N</th>
+          <th>Name</th>
+          <th>Description</th>
+
+    
+        </tr>
+      </thead>
+      <tbody>
+
+        {% for participant in object_list %}
+          <tr class='clickable-row' data-href="">
+            <td>{{ forloop.counter}}</td>
+            <td>{{ participant.name}} </td>
+            <td>{{ participant.description}}</td>
+            
+          </tr>
+        {% endfor %}
+
+      </tbody>
+    </table>
+  </div>
+{% endblock content %}
+
+
+{% block morejs %}
+<script>
+  $('#participanttable').DataTable({
+  });
+</script>
+
+{% endblock morejs %}

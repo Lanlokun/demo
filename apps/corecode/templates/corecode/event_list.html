@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Events{% endblock title %}
+
+{% block breadcrumb %}
+<a class="btn btn-primary" href="{% url 'add_event' %}"><i
+    class="fas fa-plus"></i> New Event</a>
+<a class="btn btn-primary" href=""><i
+    class="fas fa-upload"></i> Upload Events</a>
+{% endblock breadcrumb %}
+
+{% block content %}
+  <div class="table-responsive">
+    <table id="eventtable" class="table table-bordered table-hover" data-page-length='100'>
+      <thead class="thead-light">
+        <tr>
+          <th>S/N</th>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Date </th>
+          <th>Location</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        {% for event in object_list %}
+          <tr class='clickable-row' data-href="#">
+            <td>{{ forloop.counter}}</td>
+            <td>{{ event.name}} </td>
+            <td>{{ event.description}}</td>
+            <td>{{ event.date}}</td>
+            <td>{{ event.location}}</td>
+          </tr>
+        {% endfor %}
+
+      </tbody>
+    </table>
+  </div>
+{% endblock content %}
+
+
+{% block morejs %}
+<script>
+  $('#eventtable').DataTable({
+  });
+</script>
+
+{% endblock morejs %}

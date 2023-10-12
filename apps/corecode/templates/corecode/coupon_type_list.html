@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Coupon Types{% endblock title %}
+
+{% block breadcrumb %}
+<a class="btn btn-primary" href="{% url 'add_coupon_type' %}"><i
+    class="fas fa-plus"></i> New Coupon Type</a>
+
+{% endblock breadcrumb %}
+
+{% block content %}
+  <div class="table-responsive">
+    <table id="eventtable" class="table table-bordered table-hover" data-page-length='100'>
+      <thead class="thead-light">
+        <tr>
+          <th>S/N</th>
+          <th>Name</th>
+          <th>Start Time</th>
+          <th>End Time </th>
+        </tr>
+      </thead>
+      <tbody>
+
+        {% for coupon_type in object_list %}
+          <tr class='clickable-row' data-href="">
+            <td>{{ forloop.counter}}</td>
+            <td>{{ coupon_type.name}} </td>
+            <td>{{ coupon_type.start_time}}</td>
+            <td>{{ coupon_type.end_time}}</td>
+          </tr>
+        {% endfor %}
+
+      </tbody>
+    </table>
+  </div>
+{% endblock content %}
+
+
+{% block morejs %}
+<script>
+  $('#eventtable').DataTable({
+  });
+</script>
+
+{% endblock morejs %}

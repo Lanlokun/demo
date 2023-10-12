@@ -2,61 +2,80 @@ from django import forms
 from django.forms import ModelForm, modelformset_factory
 
 from .models import (
-    AcademicSession,
-    AcademicTerm,
-    SiteConfig,
-    StudentClass,
-    Subject,
+    Event,
+    Participant,
+    ParticipantType,
+    AccessCoupon,
+    CouponType
 )
 
-SiteConfigForm = modelformset_factory(
-    SiteConfig,
-    fields=(
-        "key",
-        "value",
-    ),
-    extra=0,
-)
-
-
-class AcademicSessionForm(ModelForm):
-    prefix = "Academic Session"
+class EventForm(ModelForm):
+    prefix = "Event"
 
     class Meta:
-        model = AcademicSession
-        fields = ["name", "current"]
+        model = Event
+        fields = ["name", "description", "date", "location"]
+        widgets = {
+            "date": forms.DateInput(attrs={"type": "date"}),
+        }
+    
 
+    
+    
 
-class AcademicTermForm(ModelForm):
-    prefix = "Academic Term"
-
-    class Meta:
-        model = AcademicTerm
-        fields = ["name", "current"]
-
-
-class SubjectForm(ModelForm):
-    prefix = "Subject"
+class ParticipantForm(ModelForm):
+    prefix = "Participant"
 
     class Meta:
-        model = Subject
-        fields = ["name"]
+        model = Participant
+        fields = [
+            "event",
+            "full_name",
+            "email",
+            "phone_number",
+            "address",
+            "image",
+            "type",
+            "in_event",
+            "breakfast",
+            "lunch",
+        ]    
+
+    # make image field optional   
+    def __init__(self, *args, **kwargs):
+        super(ParticipantForm, self).__init__(*args, **kwargs)
+        self.fields["image"].required = False 
 
 
-class StudentClassForm(ModelForm):
-    prefix = "Class"
+class ParticipantTypeForm(ModelForm):
+    prefix = "ParticipantType"
 
     class Meta:
-        model = StudentClass
-        fields = ["name"]
+        model = ParticipantType
+        fields = ["name", "description"]
 
+class CouponTypeForm(ModelForm):
+    prefix = "CouponType"
 
-class CurrentSessionForm(forms.Form):
-    current_session = forms.ModelChoiceField(
-        queryset=AcademicSession.objects.all(),
-        help_text='Click <a href="/session/create/?next=current-session/">here</a> to add new session',
-    )
-    current_term = forms.ModelChoiceField(
-        queryset=AcademicTerm.objects.all(),
-        help_text='Click <a href="/term/create/?next=current-session/">here</a> to add new term',
-    )
+    class Meta:
+        model = CouponType
+        fields = ["name", "start_time", "end_time"]
+        widgets = {
+            "start_time": forms.TimeInput(attrs={"type": "time"}),
+            "end_time": forms.TimeInput(attrs={"type": "time"}),
+        }
+
+class AccessCouponForm(ModelForm):
+    prefix = "AccessCoupon"
+
+    class Meta:
+        model = AccessCoupon
+        fields = ["participant", "coupon_type", "redeemed", "redeemed_at"]
+        widgets = {
+            "redeemed_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        }
+
+    
+    
+    
+    

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content-header %}
+<div class="participant-header">
+  <div class="participant-header-tools">
+    <a href="#" class="btn btn-tool">Print</a>
+    <a href="{% url 'update_participant' participant.id %}" class="btn btn-tool">
+      <i class="fas fa-edit"></i>
+    </a>
+    <a href="{% url 'delete_participant' participant.id %}" class="btn btn-tool">
+      <i class="fas fa-times"></i>
+    </a>
+  </div>
+</div>
+{% endblock content-header %}
+
+{% block content %}
+<div class="participant d-flex flex-wrap">
+  <div class="participant-image col-sm-4">
+    {% if object.image %}
+      <img src="{{ object.image.url }}" class="float-left rounded-circle mr-3">
+    {% else %}
+      <img src="{% static 'dist/img/avatar.png' %}" class="float-left rounded-circle mr-3">
+    {% endif %}
+  </div>
+  <div class="participant-info col-sm-8">
+    <h4>{{ object.full_name }}</h4>
+    <hr>
+
+    <h4>{{ object.email }}</h4>
+    <hr>
+
+    <h4>{{ object.phone_number }}</h4>
+    <hr>
+
+    <h4>{{ object.address }}</h4>
+    <hr>
+    <h5>{{ object.event.name }}</h5>
+    <hr>
+
+    <h5>{{ object.time_in }}</h5>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Events{% endblock title %}
+
+{% block breadcrumb %}
+<a class="btn btn-primary" href="{% url 'add_access_coupon' %}"><i
+    class="fas fa-plus"></i> Access Coupons </a>
+
+{% endblock breadcrumb %}
+
+{% block content %}
+  <div class="table-responsive">
+    <table id="eventtable" class="table table-bordered table-hover" data-page-length='100'>
+      <thead class="thead-light">
+        <tr>
+          <th>S/N</th>
+          <th>Participant</th>
+          <th>Coupon Type</th>
+          <th>Redeemed </th>
+          <th>Redeemed At</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        {% for access_coupon in object_list %}
+          <tr class='clickable-row' data-href="#">
+            <td>{{ forloop.counter}}</td>
+            <td>{{ access_coupon.participant.full_name}} </td>
+            <td>{{ access_coupon.coupon_type.name}}</td>
+            <td>{{ access_coupon.redeemed}}</td>
+            <td>{{ access_coupon.redeemed_at}}</td>
+          </tr>
+        {% endfor %}
+
+      </tbody>
+    </table>
+  </div>
+{% endblock content %}
+
+
+{% block morejs %}
+<script>
+  $('#eventtable').DataTable({
+  });
+</script>
+
+{% endblock morejs %}

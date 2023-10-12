@@ -27,6 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+SITE_DOMAIN = 'http://localhost:8000'  # Change the port as needed
+
+
 
 # Application definition
 
@@ -39,10 +42,10 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "widget_tweaks",
     "apps.corecode",
-    "apps.students",
-    "apps.staffs",
-    "apps.finance",
-    "apps.result",
+    # "apps.students",
+    # "apps.staffs",
+    # "apps.finance",
+    # "apps.result",
 ]
 
 MIDDLEWARE = [
@@ -53,7 +56,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "apps.corecode.middleware.SiteWideConfigs",
+    # "apps.corecode.middleware.SiteWideConfigs",
 ]
 
 ROOT_URLCONF = "school_app.urls"
@@ -71,7 +74,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "apps.corecode.context_processors.site_defaults",
+                # "apps.corecode.context_processors.site_defaults",
             ],
         },
     },

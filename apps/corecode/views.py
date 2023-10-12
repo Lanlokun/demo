@@ -2,270 +2,440 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.shortcuts import HttpResponseRedirect, redirect, render
-from django.urls import reverse_lazy
-from django.views.generic import ListView, TemplateView, View
+from django.shortcuts import HttpResponseRedirect, redirect, render, get_object_or_404
+from django.urls import reverse_lazy, reverse
+from django.views.generic import ListView, TemplateView, View, DetailView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.conf import settings
+
+import qrcode
+from io import BytesIO
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.core.files.base import ContentFile
+import io
+import csv
+import zipfile
+from django.http import HttpResponse
+from .models import Participant, ParticipantBulkUpload, AccessCoupon
+
+
 
 from .forms import (
-    AcademicSessionForm,
-    AcademicTermForm,
-    CurrentSessionForm,
-    SiteConfigForm,
-    StudentClassForm,
-    SubjectForm,
+    EventForm,
+    ParticipantForm,
+    ParticipantTypeForm,
+    AccessCouponForm,
+    CouponTypeForm,
 )
 from .models import (
-    AcademicSession,
-    AcademicTerm,
-    SiteConfig,
-    StudentClass,
-    Subject,
+    Event,
+    Participant,
+    ParticipantType,
+    AccessCoupon,
+    CouponType
 )
 
 
 class IndexView(LoginRequiredMixin, TemplateView):
     template_name = "index.html"
 
-
-class SiteConfigView(LoginRequiredMixin, View):
-    """Site Config View"""
-
-    form_class = SiteConfigForm
-    template_name = "corecode/siteconfig.html"
-
-    def get(self, request, *args, **kwargs):
-        formset = self.form_class(queryset=SiteConfig.objects.all())
-        context = {"formset": formset}
-        return render(request, self.template_name, context)
-
-    def post(self, request, *args, **kwargs):
-        formset = self.form_class(request.POST)
-        if formset.is_valid():
-            formset.save()
-            messages.success(request, "Configurations successfully updated")
-        context = {"formset": formset, "title": "Configuration"}
-        return render(request, self.template_name, context)
-
-
-class SessionListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
-    model = AcademicSession
-    template_name = "corecode/session_list.html"
+class EventListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
+    model = Event
+    template_name = "corecode/event_list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["form"] = AcademicSessionForm()
+        context["form"] = EventForm()
         return context
 
 
-class SessionCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
-    model = AcademicSession
-    form_class = AcademicSessionForm
+# class EventDetailView(LoginRequiredMixin, SuccessMessageMixin, ListView):
+#     model = Event
+#     template_name = "corecode/event_detail.html"
+
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context["form"] = EventForm()
+#         return context
+    
+
+
+class EventCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = Event
+    fields = "__all__"
     template_name = "corecode/mgt_form.html"
-    success_url = reverse_lazy("sessions")
-    success_message = "New session successfully added"
+    success_message = "New event successfully added"
+
+    def get_success_url(self):
+        return reverse_lazy("add-events")
+
+
+class EventUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = Event
+    form_class = EventForm
+    success_url = reverse_lazy("events")
+    success_message = "Event successfully updated."
+    template_name = "corecode/mgt_form.html"
+
+
+class EventDeleteView(LoginRequiredMixin, DeleteView):
+    model = Event
+    success_url = reverse_lazy("events")
+    template_name = "corecode/core_confirm_delete.html"
+    success_message = "The event {} has been deleted with all its attached content"
+
+    def delete(self, request, *args, **kwargs):
+        obj = self.get_object()
+        messages.success(self.request, self.success_message.format(obj.name))
+        return super(EventDeleteView, self).delete(request, *args, **kwargs)
+
+
+
+class ParticipantListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
+    model = Participant
+    template_name = "corecode/participant_list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["title"] = "Add new session"
+        context["form"] = ParticipantForm()
+        return context
+
+class ParticipantDetailView(LoginRequiredMixin, SuccessMessageMixin, DetailView):
+    model = Participant
+    template_name = "corecode/participant_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form"] = ParticipantForm()
         return context
 
 
-class SessionUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = AcademicSession
-    form_class = AcademicSessionForm
-    success_url = reverse_lazy("sessions")
-    success_message = "Session successfully updated."
+@csrf_exempt  # You may need to disable CSRF protection for this view.
+@require_POST  # Use POST request for QR code scanning.
+def qr_code_scan(request):
+    if request.method == 'POST':
+        try:
+            # Parse the JSON data from the POST request.
+            data = json.loads(request.body.decode('utf-8'))
+            
+            # Extract participant ID or UUID from the QR code data.
+            participant_id = data.get('participant_id')
+            
+            # Look up the participant by their unique identifier.
+            participant = get_object_or_404(Participant, id=participant_id)
+            
+            # Update the participant's in_event, breakfast, and lunch columns.
+            participant.in_event = True
+            participant.breakfast = True  # You can adjust this as needed.
+            participant.lunch = True  # You can adjust this as needed.
+            
+            # Save the updated participant record.
+            participant.save()
+            
+            # Return a success response.
+            return HttpResponse("Participant updated successfully.")
+        except Exception as e:
+            # Handle any exceptions that may occur during the update process.
+            return HttpResponse("Error updating participant: " + str(e))
+    
+    return HttpResponse("Invalid request method.")
+
+
+def generate_qr_code(participant):
+    # Create a QR code instance
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+
+    # Generate a unique identifier for the participant (e.g., participant ID)
+    participant_identifier = participant.id  # You can adjust this based on your data structure
+    
+    # Build the full URL that includes the domain (local server)
+    qr_code_scan_url = settings.SITE_DOMAIN + reverse('qr_code_scan') + f'?participant_id={participant_identifier}'
+    
+    # Add the QR code scanning URL to the QR code data
+    qr.add_data(qr_code_scan_url)
+    qr.make(fit=True)
+
+    # Create a PIL Image
+    qr_img = qr.make_image(fill_color="black", back_color="white")
+
+    # Create a BytesIO object to hold the image data
+    buffer = BytesIO()
+    qr_img.save(buffer, format="PNG")
+
+    # Create an InMemoryUploadedFile from the BytesIO object
+    qr_code_image = InMemoryUploadedFile(
+        ContentFile(buffer.getvalue()),
+        None,  # Field name
+        f"qr_codes/{participant.full_name}.png",  # File name/path in your media directory
+        "image/png",  # Content type
+        buffer.tell,  # File size
+        None,  # Content type extra headers
+    )
+
+    # Save the QR code image to the participant's qr_code_image field
+    participant.qr_code_image = qr_code_image
+    participant.save()
+class ParticipantCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = Participant
+    form_class = ParticipantForm
     template_name = "corecode/mgt_form.html"
+    success_url = reverse_lazy("participants")
+    success_message = "New participant successfully added"
 
     def form_valid(self, form):
-        obj = self.object
-        if obj.current == False:
-            terms = (
-                AcademicSession.objects.filter(current=True)
-                .exclude(name=obj.name)
-                .exists()
-            )
-            if not terms:
-                messages.warning(self.request, "You must set a session to current.")
-                return redirect("session-list")
+        # Create a Participant instance but don't save it yet
+        participant = form.save(commit=False)
+    
+        # Save the participant instance to get an ID
+        participant.save()
+
+        # Generate the QR code with the updated participant instance
+        generate_qr_code(participant)
+
+        # Save the participant instance again to ensure it gets an ID
+        participant.save()
+
         return super().form_valid(form)
 
 
-class SessionDeleteView(LoginRequiredMixin, DeleteView):
-    model = AcademicSession
-    success_url = reverse_lazy("sessions")
+
+class ParticipantUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = Participant
+    form_class = ParticipantForm
+    success_url = reverse_lazy("participants")
+    success_message = "Participant successfully updated."
+    template_name = "corecode/mgt_form.html"
+
+
+class ParticipantDeleteView(LoginRequiredMixin, DeleteView):
+    model = Participant
+    success_url = reverse_lazy("participants")
     template_name = "corecode/core_confirm_delete.html"
-    success_message = "The session {} has been deleted with all its attached content"
+    success_message = "The participant {} has been deleted with all its attached content"
 
     def delete(self, request, *args, **kwargs):
         obj = self.get_object()
-        if obj.current == True:
-            messages.warning(request, "Cannot delete session as it is set to current")
-            return redirect("sessions")
-        messages.success(self.request, self.success_message.format(obj.name))
-        return super(SessionDeleteView, self).delete(request, *args, **kwargs)
+        messages.success(self.request, self.success_message.format(obj.full_name))
+        return super(ParticipantDeleteView, self).delete(request, *args, **kwargs)
 
+class ParticipantBulkUploadView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = ParticipantBulkUpload
+    template_name = "corecode/participants_upload.html"
+    fields = ["csv_file"]
+    success_url = "/participant/list"
+    success_message = "Successfully uploaded participants"
 
-class TermListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
-    model = AcademicTerm
-    template_name = "corecode/term_list.html"
+class DownloadCSVViewdownloadcsv(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="participant_template.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(
+            [
+                "event",
+                "full_name",
+                "email",
+                "phone_number",
+                "address",
+                "type",
+
+            ]
+        )
+
+        return response
+
+ 
+class ParticipantTypeListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
+    model = ParticipantType
+    template_name = "corecode/participant_type_list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["form"] = AcademicTermForm()
+        context["form"] = ParticipantTypeForm()
+        return context
+
+class ParticipantTypeDetailView(LoginRequiredMixin, SuccessMessageMixin, ListView):
+    model = ParticipantType
+    template_name = "corecode/participant_type_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form"] = ParticipantTypeForm()
         return context
 
 
-class TermCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
-    model = AcademicTerm
-    form_class = AcademicTermForm
+class ParticipantTypeCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = ParticipantType
+    form_class = ParticipantTypeForm
     template_name = "corecode/mgt_form.html"
-    success_url = reverse_lazy("terms")
-    success_message = "New term successfully added"
+    success_url = reverse_lazy("participant_types")
+    success_message = "New participant type successfully added"
 
-
-class TermUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = AcademicTerm
-    form_class = AcademicTermForm
-    success_url = reverse_lazy("terms")
-    success_message = "Term successfully updated."
-    template_name = "corecode/mgt_form.html"
 
     def form_valid(self, form):
-        obj = self.object
-        if obj.current == False:
-            terms = (
-                AcademicTerm.objects.filter(current=True)
-                .exclude(name=obj.name)
-                .exists()
-            )
-            if not terms:
-                messages.warning(self.request, "You must set a term to current.")
-                return redirect("term")
+        # Call the generate_qr_code function to create and save the QR code
+        generate_qr_code(form.instance)
         return super().form_valid(form)
 
+class ParticipantTypeUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = ParticipantType
+    form_class = ParticipantTypeForm
+    success_url = reverse_lazy("participant_types")
+    success_message = "Participant type successfully updated."
+    template_name = "corecode/mgt_form.html"
 
-class TermDeleteView(LoginRequiredMixin, DeleteView):
-    model = AcademicTerm
-    success_url = reverse_lazy("terms")
+
+class ParticipantTypeDeleteView(LoginRequiredMixin, DeleteView):
+    model = ParticipantType
+    success_url = reverse_lazy("participant_types")
     template_name = "corecode/core_confirm_delete.html"
-    success_message = "The term {} has been deleted with all its attached content"
+    success_message = "The participant type {} has been deleted with all its attached content"
 
     def delete(self, request, *args, **kwargs):
         obj = self.get_object()
-        if obj.current == True:
-            messages.warning(request, "Cannot delete term as it is set to current")
-            return redirect("terms")
         messages.success(self.request, self.success_message.format(obj.name))
-        return super(TermDeleteView, self).delete(request, *args, **kwargs)
+        return super(ParticipantTypeDeleteView, self).delete(request, *args, **kwargs)
 
+@login_required
+def download_all_participants(request):
+    participants = Participant.objects.all()
 
-class ClassListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
-    model = StudentClass
-    template_name = "corecode/class_list.html"
+    # Create an in-memory ZIP file to store participant images
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for participant in participants:
+            # Add each participant's image to the ZIP file
+            if participant.image:
+                image_data = participant.image.read()
+                zip_file.writestr(f'{participant.full_name}.jpg', image_data)
+
+    # Prepare the response with the ZIP file
+    response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename=participants.zip'
+    return response
+
+class CouponTypeListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
+    model = CouponType
+    template_name = "corecode/coupon_type_list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["form"] = StudentClassForm()
+        context["form"] = CouponTypeForm()
         return context
 
-
-class ClassCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
-    model = StudentClass
-    form_class = StudentClassForm
-    template_name = "corecode/mgt_form.html"
-    success_url = reverse_lazy("classes")
-    success_message = "New class successfully added"
-
-
-class ClassUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = StudentClass
-    fields = ["name"]
-    success_url = reverse_lazy("classes")
-    success_message = "class successfully updated."
-    template_name = "corecode/mgt_form.html"
-
-
-class ClassDeleteView(LoginRequiredMixin, DeleteView):
-    model = StudentClass
-    success_url = reverse_lazy("classes")
-    template_name = "corecode/core_confirm_delete.html"
-    success_message = "The class {} has been deleted with all its attached content"
-
-    def delete(self, request, *args, **kwargs):
-        obj = self.get_object()
-        print(obj.name)
-        messages.success(self.request, self.success_message.format(obj.name))
-        return super(ClassDeleteView, self).delete(request, *args, **kwargs)
-
-
-class SubjectListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
-    model = Subject
-    template_name = "corecode/subject_list.html"
+class CouponTypeDetailView(LoginRequiredMixin, SuccessMessageMixin, ListView):
+    model = CouponType
+    template_name = "corecode/coupon_type_detail.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["form"] = SubjectForm()
-        return context
+        context["form"] = CouponTypeForm()
+        return context    
+        
 
-
-class SubjectCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
-    model = Subject
-    form_class = SubjectForm
+class CouponTypeCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = CouponType
+    form_class = CouponTypeForm
     template_name = "corecode/mgt_form.html"
-    success_url = reverse_lazy("subjects")
-    success_message = "New subject successfully added"
+    success_url = reverse_lazy("coupon_types")
+    success_message = "New coupon type successfully added"
 
 
-class SubjectUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = Subject
-    fields = ["name"]
-    success_url = reverse_lazy("subjects")
-    success_message = "Subject successfully updated."
+class CouponTypeUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = CouponType
+    form_class = CouponTypeForm
+    success_url = reverse_lazy("coupon_types")
+    success_message = "Coupon type successfully updated."
     template_name = "corecode/mgt_form.html"
 
 
-class SubjectDeleteView(LoginRequiredMixin, DeleteView):
-    model = Subject
-    success_url = reverse_lazy("subjects")
+class CouponTypeDeleteView(LoginRequiredMixin, DeleteView):
+    model = CouponType
+    success_url = reverse_lazy("coupon_types")
     template_name = "corecode/core_confirm_delete.html"
-    success_message = "The subject {} has been deleted with all its attached content"
+    success_message = "The coupon type {} has been deleted with all its attached content"
 
     def delete(self, request, *args, **kwargs):
         obj = self.get_object()
         messages.success(self.request, self.success_message.format(obj.name))
-        return super(SubjectDeleteView, self).delete(request, *args, **kwargs)
+        return super(CouponTypeDeleteView, self).delete(request, *args, **kwargs)
+
+class AccessCouponListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
+    model = AccessCoupon
+    template_name = "corecode/access_coupon_list.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form"] = AccessCouponForm()
+        return context
 
 
-class CurrentSessionAndTermView(LoginRequiredMixin, View):
-    """Current SEssion and Term"""
+class AccessCouponDetailView(LoginRequiredMixin, SuccessMessageMixin, ListView):
+    model = AccessCoupon
+    template_name = "corecode/access_coupon_detail.html"
 
-    form_class = CurrentSessionForm
-    template_name = "corecode/current_session.html"
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form"] = AccessCouponForm()
+        return context
 
-    def get(self, request, *args, **kwargs):
-        form = self.form_class(
-            initial={
-                "current_session": AcademicSession.objects.get(current=True),
-                "current_term": AcademicTerm.objects.get(current=True),
-            }
-        )
-        return render(request, self.template_name, {"form": form})
+class AccessCouponCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = AccessCoupon
+    form_class = AccessCouponForm
+    template_name = "corecode/mgt_form.html"
+    success_url = reverse_lazy("access_coupons")
+    success_message = "New access coupon successfully added"
 
-    def post(self, request, *args, **kwargs):
-        form = self.form_class(
-            request.POST,
-            initial={
-                "current_session": AcademicSession.objects.get(current=True),
-                "current_term": AcademicTerm.objects.get(current=True),
-            }
-        )
-        if form.is_valid():
-            session = form.cleaned_data["current_session"]
-            term = form.cleaned_data["current_term"]
-            AcademicSession.objects.filter(name=session).update(current=True)
-            AcademicSession.objects.exclude(name=session).update(current=False)
-            AcademicTerm.objects.filter(name=term).update(current=True)
 
-        return render(request, self.template_name, {"form": form})
+class AccessCouponUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = AccessCoupon
+    form_class = AccessCouponForm
+    success_url = reverse_lazy("access_coupons")
+    success_message = "Access coupon successfully updated."
+    template_name = "corecode/mgt_form.html"
+
+
+
+class AccessCouponDeleteView(LoginRequiredMixin, DeleteView):
+    model = AccessCoupon
+    success_url = reverse_lazy("access_coupons")
+    template_name = "corecode/core_confirm_delete.html"
+    success_message = "The access coupon {} has been deleted with all its attached content"
+
+    def delete(self, request, *args, **kwargs):
+        obj = self.get_object()
+        messages.success(self.request, self.success_message.format(obj.participant))
+        return super(AccessCouponDeleteView, self).delete(request, *args, **kwargs)
+
+
+def redeem_coupon(request, qr_code_data):
+    # Extract participant's unique identifier from QR code data
+    participant_id = qr_code_data  # Replace this with your actual logic to extract the identifier
+
+    # Check if the participant exists
+    participant = get_object_or_404(Participant, qr_code_reference=participant_id)
+
+    # Check if there are any unredeemed coupons for the participant
+    unredeemed_coupons = AccessCoupon.objects.filter(participant=participant, redeemed=False)
+
+    if unredeemed_coupons.exists():
+        # Redeem the first unredeemed coupon (you can modify the logic as needed)
+        coupon_to_redeem = unredeemed_coupons.first()
+        coupon_to_redeem.redeemed = True
+        coupon_to_redeem.redeemed_at = timezone.now()  # Import timezone
+        coupon_to_redeem.save()
+
+        # You can also implement additional logic here, such as sending an email confirmation
+
+        return redirect('coupon_redeemed_success')
+    else:
+        # No unredeemed coupons found for the participant
+        return redirect('no_coupons_to_redeem')
