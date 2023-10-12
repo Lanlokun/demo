@@ -88,7 +88,11 @@ WSGI_APPLICATION = "school_app.wsgi.application"
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
 DATABASES = {
-    "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
+    'default': dj_database_url.config(
+        # Feel free to alter this value to suit your needs.
+        default='postgres://demodb_pan8_user:hm99X5wLgkDOyfAWduV6paDojTSwjYtF@dpg-ckjtkf9jrl0c73fnaphg-a.oregon-postgres.render.com/demodb_pan8',
+        conn_max_age=600
+    )
 }
 
 
