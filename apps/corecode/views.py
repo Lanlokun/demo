@@ -128,7 +128,7 @@ def update_in_event(request, participant_id):
     else:
         messages.error(request, 'Invalid request')
         return HttpResponseRedirect(reverse('participant_detail', args=(participant_id,)))
-        
+
 def update_breakfast(request, participant_id):
     if request.method == 'POST':
         is_checked = request.POST.get('breakfast') == 'on'
@@ -323,10 +323,14 @@ def download_all_participants(request):
                 image_data = participant.image.read()
                 zip_file.writestr(f'{participant.full_name}.jpg', image_data)
 
+    # Set the buffer's position to the beginning before sending it in the response
+    zip_buffer.seek(0)
+
     # Prepare the response with the ZIP file
-    response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+    response = HttpResponse(zip_buffer.read(), content_type='application/zip')
     response['Content-Disposition'] = 'attachment; filename=participants.zip'
     return response
+
 
 class CouponTypeListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
     model = CouponType
