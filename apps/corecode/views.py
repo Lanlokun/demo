@@ -191,20 +191,20 @@ class ParticipantCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView)
     success_url = reverse_lazy("participants")
     success_message = "New participant successfully added"
 
-    def form_valid(self, form):
-        # Create a Participant instance but don't save it yet
-        participant = form.save(commit=False)
+    # def form_valid(self, form):
+    #     # Create a Participant instance but don't save it yet
+    #     participant = form.save(commit=False)
     
-        # Save the participant instance to get an ID
-        participant.save()
+    #     # Save the participant instance to get an ID
+    #     participant.save()
 
-        # Generate the QR code with the updated participant instance
-        generate_qr_code(participant)
+    #     # Generate the QR code with the updated participant instance
+    #     generate_qr_code(participant)
 
-        # Save the participant instance again to ensure it gets an ID
-        participant.save()
+    #     # Save the participant instance again to ensure it gets an ID
+    #     participant.save()
 
-        return super().form_valid(form)
+    #     return super().form_valid(form)
 
 
 
