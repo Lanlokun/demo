@@ -28,18 +28,62 @@
     <h4>{{ object.full_name }}</h4>
     <hr>
 
-    <h4>{{ object.email }}</h4>
-    <hr>
+    <form method="POST" action="{% url 'update_participant' participant.id %}">
+      {% csrf_token %}
+      
+      <label for="in_event">In Event:</label>
+      <input type="checkbox" name="in_event" id="in_event" {% if object.in_event %}checked{% endif %}>
+      {% if object.in_event %}Yes{% else %}No{% endif %}
+      <hr>
 
-    <h4>{{ object.phone_number }}</h4>
-    <hr>
+      <label for="breakfast">Breakfast:</label>
+      <input type="checkbox" name="breakfast" id="breakfast" {% if object.breakfast %}checked{% endif %}>
+      {% if object.breakfast %}Eaten{% else %}Not Yet{% endif %}
+      <hr>
 
-    <h4>{{ object.address }}</h4>
-    <hr>
-    <h5>{{ object.event.name }}</h5>
-    <hr>
+      <label for="lunch">Lunch:</label>
+      <input type="checkbox" name="lunch" id="lunch" {% if object.lunch %}checked{% endif %}>
+      {% if object.lunch %}Eaten{% else %}Not yet{% endif %}
+      <hr>
 
-    <h5>{{ object.time_in }}</h5>
+      <button type="submit" class="btn btn-primary">Update</button>
+    </form>
   </div>
 </div>
 {% endblock content %}
+
+
+
+{% block morejs %}
+<script>
+  $(document).ready(function () {
+      // Function to handle checkbox click event
+      function handleCheckboxClick(checkbox) {
+          const updateUrl = $(checkbox).data('update-url');
+          const columnName = $(checkbox).attr('name');
+          const isChecked = checkbox.checked;
+  
+          // Send AJAX request to update the participant's data
+          $.ajax({
+              url: updateUrl,
+              type: 'POST',
+              data: {
+                  column_name: columnName,
+                  is_checked: isChecked
+              },
+              success: function (data) {
+                  // Handle success response if needed
+              },
+              error: function (error) {
+                  console.error(error);
+              }
+          });
+      }
+  
+      // Bind click event to the checkboxes
+      $('#in_event, #breakfast, #lunch').on('click', function () {
+          handleCheckboxClick(this);
+      });
+  });
+  </script>
+{% endblock morejs %}  

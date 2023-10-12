@@ -26,7 +26,6 @@ from .views import (
     download_all_participants,
     DownloadCSVViewdownloadcsv,
     ParticipantBulkUploadView,
-    qr_code_scan,
     
 
     
@@ -59,7 +58,6 @@ urlpatterns = [
     path('download_all_participants/', download_all_participants, name='download_all_participants'),
     path("download-csv/", DownloadCSVViewdownloadcsv.as_view(), name="download-csv"),
     path("upload/", ParticipantBulkUploadView.as_view(), name="participant-upload"),
-    path('qr_code_scan/', qr_code_scan, name='qr_code_scan'),
 
 
 

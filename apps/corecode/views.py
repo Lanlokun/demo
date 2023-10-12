@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.conf import settings
 
+from django.http import JsonResponse
 import qrcode
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -102,7 +103,7 @@ class ParticipantListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
         context["form"] = ParticipantForm()
         return context
 
-class ParticipantDetailView(LoginRequiredMixin, SuccessMessageMixin, DetailView):
+class ParticipantDetailView(SuccessMessageMixin, DetailView):
     model = Participant
     template_name = "corecode/participant_detail.html"
 
@@ -112,35 +113,35 @@ class ParticipantDetailView(LoginRequiredMixin, SuccessMessageMixin, DetailView)
         return context
 
 
-@csrf_exempt  # You may need to disable CSRF protection for this view.
-@require_POST  # Use POST request for QR code scanning.
-def qr_code_scan(request):
-    if request.method == 'POST':
-        try:
-            # Parse the JSON data from the POST request.
-            data = json.loads(request.body.decode('utf-8'))
-            
-            # Extract participant ID or UUID from the QR code data.
-            participant_id = data.get('participant_id')
-            
-            # Look up the participant by their unique identifier.
-            participant = get_object_or_404(Participant, id=participant_id)
-            
-            # Update the participant's in_event, breakfast, and lunch columns.
-            participant.in_event = True
-            participant.breakfast = True  # You can adjust this as needed.
-            participant.lunch = True  # You can adjust this as needed.
-            
-            # Save the updated participant record.
-            participant.save()
-            
-            # Return a success response.
-            return HttpResponse("Participant updated successfully.")
-        except Exception as e:
-            # Handle any exceptions that may occur during the update process.
-            return HttpResponse("Error updating participant: " + str(e))
-    
-    return HttpResponse("Invalid request method.")
+
+
+def update_in_event(request, participant_id):
+    if request.method == 'POST' and request.is_ajax():
+        is_checked = request.POST.get('is_checked') == 'true'  # Convert string to boolean
+        participant = Participant.objects.get(pk=participant_id)
+        participant.in_event = is_checked
+        participant.save()
+        return JsonResponse({'message': 'Updated successfully'})
+    return JsonResponse({'message': 'Invalid request'}, status=400)
+
+def update_breakfast(request, participant_id):
+    if request.method == 'POST' and request.is_ajax():
+        is_checked = request.POST.get('is_checked') == 'true'  # Convert string to boolean
+        participant = Participant.objects.get(pk=participant_id)
+        participant.breakfast = is_checked
+        participant.save()
+        return JsonResponse({'message': 'Updated successfully'})
+    return JsonResponse({'message': 'Invalid request'}, status=400)
+
+def update_lunch(request, participant_id):
+    if request.method == 'POST' and request.is_ajax():
+        is_checked = request.POST.get('is_checked') == 'true'  # Convert string to boolean
+        participant = Participant.objects.get(pk=participant_id)
+        participant.lunch = is_checked
+        participant.save()
+        return JsonResponse({'message': 'Updated successfully'})
+    return JsonResponse({'message': 'Invalid request'}, status=400)
+
 
 
 def generate_qr_code(participant):
@@ -152,14 +153,11 @@ def generate_qr_code(participant):
         border=4,
     )
 
-    # Generate a unique identifier for the participant (e.g., participant ID)
-    participant_identifier = participant.id  # You can adjust this based on your data structure
-    
-    # Build the full URL that includes the domain (local server)
-    qr_code_scan_url = settings.SITE_DOMAIN + reverse('qr_code_scan') + f'?participant_id={participant_identifier}'
-    
-    # Add the QR code scanning URL to the QR code data
-    qr.add_data(qr_code_scan_url)
+    # Generate the URL for the participant's detail page
+    participant_url = settings.SITE_DOMAIN + reverse("participant_detail", args=[str(participant.id)])
+
+    # Add the participant's detail page URL to the QR code data
+    qr.add_data(participant_url)
     qr.make(fit=True)
 
     # Create a PIL Image
@@ -183,6 +181,8 @@ def generate_qr_code(participant):
     participant.qr_code_image = qr_code_image
     participant.save()
 
+
+
 class ParticipantCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Participant
     form_class = ParticipantForm
@@ -191,19 +191,17 @@ class ParticipantCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView)
     success_message = "New participant successfully added"
 
     def form_valid(self, form):
-        # Create a Participant instance but don't save it yet
-        participant = form.save(commit=False)
-    
-        # Save the participant instance to get an ID
-        participant.save()
+            # Create a Participant instance but don't save it yet
+            participant = form.save(commit=False)
 
-        # Generate the QR code with the updated participant instance
-        generate_qr_code(participant)
+            participant.save()
 
-        # Save the participant instance again to ensure it gets an ID
-        participant.save()
+            generate_qr_code(participant)
 
-        return super().form_valid(form)
+            participant.save()
+
+            return super().form_valid(form)
+
 
 
 
