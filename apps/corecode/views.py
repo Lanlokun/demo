@@ -71,6 +71,13 @@ class EventCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy("add-events")
 
+    # make date field date widget
+    def get_form(self):
+        form = super(EventCreateView, self).get_form()
+        form.fields["date"].widget = forms.DateInput(attrs={"type": "date"})
+        return form
+    
+
 
 class EventUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Event
