@@ -28,7 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-SITE_DOMAIN = 'http://localhost:8000'  # Change the port as needed
+SITE_DOMAIN = 'https://demo-3bh6.onrender.com'  # Change the port as needed
 
 
 
