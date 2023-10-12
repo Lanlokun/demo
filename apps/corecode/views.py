@@ -143,45 +143,47 @@ def qr_code_scan(request):
     return HttpResponse("Invalid request method.")
 
 
-def generate_qr_code(participant):
-    # Create a QR code instance
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
+# def generate_qr_code(participant):
+#     # Create a QR code instance
+#     qr = qrcode.QRCode(
+#         version=1,
+#         error_correction=qrcode.constants.ERROR_CORRECT_L,
+#         box_size=10,
+#         border=4,
+#     )
 
-    # Generate a unique identifier for the participant (e.g., participant ID)
-    participant_identifier = participant.id  # You can adjust this based on your data structure
+#     # Generate a unique identifier for the participant (e.g., participant ID)
+#     participant_identifier = participant.id  # You can adjust this based on your data structure
     
-    # Build the full URL that includes the domain (local server)
-    qr_code_scan_url = settings.SITE_DOMAIN + reverse('qr_code_scan') + f'?participant_id={participant_identifier}'
+#     # Build the full URL that includes the domain (local server)
+#     qr_code_scan_url = settings.SITE_DOMAIN + reverse('qr_code_scan') + f'?participant_id={participant_identifier}'
     
-    # Add the QR code scanning URL to the QR code data
-    qr.add_data(qr_code_scan_url)
-    qr.make(fit=True)
+#     # Add the QR code scanning URL to the QR code data
+#     qr.add_data(qr_code_scan_url)
+#     qr.make(fit=True)
 
-    # Create a PIL Image
-    qr_img = qr.make_image(fill_color="black", back_color="white")
+#     # Create a PIL Image
+#     qr_img = qr.make_image(fill_color="black", back_color="white")
 
-    # Create a BytesIO object to hold the image data
-    buffer = BytesIO()
-    qr_img.save(buffer, format="PNG")
+#     # Create a BytesIO object to hold the image data
+#     buffer = BytesIO()
+#     qr_img.save(buffer, format="PNG")
 
-    # Create an InMemoryUploadedFile from the BytesIO object
-    qr_code_image = InMemoryUploadedFile(
-        ContentFile(buffer.getvalue()),
-        None,  # Field name
-        f"qr_codes/{participant.full_name}.png",  # File name/path in your media directory
-        "image/png",  # Content type
-        buffer.tell,  # File size
-        None,  # Content type extra headers
-    )
+#     # Create an InMemoryUploadedFile from the BytesIO object
+#     qr_code_image = InMemoryUploadedFile(
+#         ContentFile(buffer.getvalue()),
+#         None,  # Field name
+#         f"qr_codes/{participant.full_name}.png",  # File name/path in your media directory
+#         "image/png",  # Content type
+#         buffer.tell,  # File size
+#         None,  # Content type extra headers
+#     )
 
-    # Save the QR code image to the participant's qr_code_image field
-    participant.qr_code_image = qr_code_image
-    participant.save()
+#     # Save the QR code image to the participant's qr_code_image field
+#     participant.qr_code_image = qr_code_image
+#     participant.save()
+
+
 class ParticipantCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Participant
     form_class = ParticipantForm
