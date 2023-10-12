@@ -64,19 +64,12 @@ class EventListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
 
 class EventCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Event
-    fields = "__all__"
+    form_class = EventForm
     template_name = "corecode/mgt_form.html"
     success_message = "New event successfully added"
 
     def get_success_url(self):
-        return reverse_lazy("add-events")
-
-    # make date field date widget
-    def get_form(self):
-        form = super(EventCreateView, self).get_form()
-        form.fields["date"].widget = forms.DateInput(attrs={"type": "date"})
-        return form
-    
+        return reverse_lazy("events")    
 
 
 class EventUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
