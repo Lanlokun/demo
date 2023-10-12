@@ -116,32 +116,44 @@ class ParticipantDetailView(SuccessMessageMixin, DetailView):
 
 
 def update_in_event(request, participant_id):
-    if request.method == 'POST' and request.is_ajax():
-        is_checked = request.POST.get('is_checked') == 'true'  # Convert string to boolean
+    if request.method == 'POST':
+        is_checked = request.POST.get('in_event') == 'on'
         participant = Participant.objects.get(pk=participant_id)
         participant.in_event = is_checked
         participant.save()
-        return JsonResponse({'message': 'Updated successfully'})
-    return JsonResponse({'message': 'Invalid request'}, status=400)
 
+        messages.success(request, 'Updated successfully')
+        return HttpResponseRedirect(reverse('participant_detail', args=(participant_id,)))
+
+    else:
+        messages.error(request, 'Invalid request')
+        return HttpResponseRedirect(reverse('participant_detail', args=(participant_id,)))
+        
 def update_breakfast(request, participant_id):
-    if request.method == 'POST' and request.is_ajax():
-        is_checked = request.POST.get('is_checked') == 'true'  # Convert string to boolean
+    if request.method == 'POST':
+        is_checked = request.POST.get('breakfast') == 'on'
         participant = Participant.objects.get(pk=participant_id)
         participant.breakfast = is_checked
         participant.save()
-        return JsonResponse({'message': 'Updated successfully'})
-    return JsonResponse({'message': 'Invalid request'}, status=400)
+
+        messages.success(request, 'Updated successfully')
+        return HttpResponseRedirect(reverse('participant_detail', args=(participant_id,)))
+    else:
+        messages.error(request, 'Invalid request')
+        return HttpResponseRedirect(reverse('participant_detail', args=(participant_id,)))
 
 def update_lunch(request, participant_id):
-    if request.method == 'POST' and request.is_ajax():
-        is_checked = request.POST.get('is_checked') == 'true'  # Convert string to boolean
+    if request.method == 'POST':
+        is_checked = request.POST.get('lunch') == 'on'
         participant = Participant.objects.get(pk=participant_id)
         participant.lunch = is_checked
         participant.save()
-        return JsonResponse({'message': 'Updated successfully'})
-    return JsonResponse({'message': 'Invalid request'}, status=400)
 
+        messages.success(request, 'Updated successfully')
+        return HttpResponseRedirect(reverse('participant_detail', args=(participant_id,)))
+    else:
+        messages.error(request, 'Invalid request')
+        return HttpResponseRedirect(reverse('participant_detail', args=(participant_id,)))
 
 
 def generate_qr_code(participant):

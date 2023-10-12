@@ -19,7 +19,14 @@ class EventForm(ModelForm):
             "date": forms.DateInput(attrs={"type": "date"}),
         }
     
+class InEventForm(forms.Form):
+    is_checked = forms.BooleanField(required=False)
 
+class BreakfastForm(forms.Form):
+    eaten = forms.BooleanField(required=False)
+
+class LunchForm(forms.Form):
+    eaten = forms.BooleanField(required=False)
     
     
 

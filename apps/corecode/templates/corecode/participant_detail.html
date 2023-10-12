@@ -28,25 +28,35 @@
     <h4>{{ object.full_name }}</h4>
     <hr>
 
-    <form method="POST" action="{% url 'update_participant' participant.id %}">
+    <form method="POST" action="{% url 'update-in-event' participant.id %}">
       {% csrf_token %}
       
       <label for="in_event">In Event:</label>
       <input type="checkbox" name="in_event" id="in_event" {% if object.in_event %}checked{% endif %}>
       {% if object.in_event %}Yes{% else %}No{% endif %}
+      <button type="submit" class="btn btn-primary" style="float:right;">Update</button>
+    </form>
+
       <hr>
+      <form method="POST" action="{% url 'update-breakfast' participant.id %}">
+        {% csrf_token %}
 
       <label for="breakfast">Breakfast:</label>
       <input type="checkbox" name="breakfast" id="breakfast" {% if object.breakfast %}checked{% endif %}>
       {% if object.breakfast %}Eaten{% else %}Not Yet{% endif %}
+      <button type="submit" class="btn btn-primary" style="float:right;">Update</button>
+
+      </form>
       <hr>
+      <form method="POST" action="{% url 'update-lunch' participant.id %}">
+        {% csrf_token %}
 
       <label for="lunch">Lunch:</label>
       <input type="checkbox" name="lunch" id="lunch" {% if object.lunch %}checked{% endif %}>
       {% if object.lunch %}Eaten{% else %}Not yet{% endif %}
-      <hr>
+      <button type="submit" class="btn btn-primary" style="float:right;">Update</button>
 
-      <button type="submit" class="btn btn-primary">Update</button>
+      <hr>
     </form>
   </div>
 </div>

@@ -26,6 +26,9 @@ from .views import (
     download_all_participants,
     DownloadCSVViewdownloadcsv,
     ParticipantBulkUploadView,
+    update_in_event,
+    update_breakfast,
+    update_lunch,
     
 
     
@@ -58,6 +61,10 @@ urlpatterns = [
     path('download_all_participants/', download_all_participants, name='download_all_participants'),
     path("download-csv/", DownloadCSVViewdownloadcsv.as_view(), name="download-csv"),
     path("upload/", ParticipantBulkUploadView.as_view(), name="participant-upload"),
+    path("update-in-event/<int:participant_id>/", update_in_event, name="update-in-event"),
+    path("update-breakfast/<int:participant_id>/", update_breakfast, name="update-breakfast"),
+    path("update-lunch/<int:participant_id>/", update_lunch, name="update-lunch"),
+
 
 
 
